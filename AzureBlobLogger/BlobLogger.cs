@@ -58,6 +58,9 @@ namespace AzureBlobLogger
 
         public async Task Flush()
         {
+            // Wait until the previous task is finished.
+            await BlobUploadTask;
+
             var logs = new StringBuilder();
             var bakup = new List<AzureBlobLogItem>();
 

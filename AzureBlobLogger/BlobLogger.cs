@@ -43,7 +43,12 @@ namespace AzureBlobLogger
             Evaluate();
         }
 
-        public void Evaluate()
+        public void SetLocation(string newBlobName)
+        {
+            this.blobName = newBlobName;
+        }
+
+        private void Evaluate()
         {
             if(this.logItems.Count > 30 || DateTime.Now - lastFlushTime > TimeSpan.FromMinutes(5))
             {
@@ -56,10 +61,18 @@ namespace AzureBlobLogger
             var logs = new StringBuilder();
             var bakup = new List<AzureBlobLogItem>();
 
+            lastFlushTime = DateTime.Now;
+
             lock (logItemsLocker)
             {
+                if(logItems.Count == 0)
+                {
+                    return;
+                }
+
                 foreach (var item in logItems)
                 {
+
                     foreach (var line in item.Value.Lines)
                     {
                         logs.AppendLine($"[{item.Value.Time:yyyy/MM/dd HH:mm:ss.fff}][{item.Value.Level}] {line}");
@@ -91,10 +104,6 @@ namespace AzureBlobLogger
         {
             BlobUploadTask.Wait();
             Flush().Wait();
-        }
-
-        ~BlobLogger(){
-            this.Dispose();
         }
     }
 

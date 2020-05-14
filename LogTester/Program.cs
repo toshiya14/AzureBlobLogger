@@ -11,16 +11,33 @@ namespace LogTester
             var container = "logs";
             var blobName = "test.log";
 
-            var logger = new BlobLogger(constr, container, blobName);
-            logger.Append("Test log -> TEXT.", LogLevel.Text);
-            logger.Append("Test log -> DEBUG.", LogLevel.Debug);
-            logger.Append("Test log -> INFO.", LogLevel.Information);
-            logger.Append("Test log -> WARN.", LogLevel.Warning);
-            logger.Append("Test log -> ERROR.", LogLevel.Error);
-            logger.Append("Test log -> FATAL.", LogLevel.Fatal);
-            logger.Append("Test log -> Exception", LogLevel.Error);
-            logger.Append(new Exception("This is an exception"), LogLevel.Error);
-            logger.Flush().Wait();
+            using (var logger = new BlobLogger(constr, container, blobName))
+            {
+                logger.Append("TEXT log test.", LogLevel.Text);
+                logger.Append("DEBUG log test.", LogLevel.Debug);
+                logger.Append("INFO log test.", LogLevel.Information);
+                logger.Append("WARN log test.", LogLevel.Warning);
+                logger.Append("ERROR log test.", LogLevel.Error);
+                logger.Append("FATAL log test.", LogLevel.Fatal);
+                try
+                {
+                    var b = 0;
+                    var a = 1 / b;
+                }
+                catch (Exception ex)
+                {
+                    logger.Append(ex, LogLevel.Error);
+                }
+                try
+                {
+                    var c = new[] { 1, 2, 3 };
+                    var d = c[3];
+                }catch(Exception ex)
+                {
+                    logger.Append(ex, LogLevel.Error);
+                }
+                logger.Append(new Exception("System Exception Test"), LogLevel.Error);
+            }
         }
     }
 }

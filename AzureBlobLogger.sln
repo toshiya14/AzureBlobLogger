@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30011.22
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogTester", "LogTester\LogTester.csproj", "{73EA2994-BB58-41C6-AFE6-7E0C970B14B0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzureBlobLogger", "AzureBlobLogger\AzureBlobLogger.csproj", "{2F99B7FB-7A7C-4925-9519-20246ADD08EE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{73EA2994-BB58-41C6-AFE6-7E0C970B14B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{73EA2994-BB58-41C6-AFE6-7E0C970B14B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{73EA2994-BB58-41C6-AFE6-7E0C970B14B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{73EA2994-BB58-41C6-AFE6-7E0C970B14B0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2F99B7FB-7A7C-4925-9519-20246ADD08EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2F99B7FB-7A7C-4925-9519-20246ADD08EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2F99B7FB-7A7C-4925-9519-20246ADD08EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2F99B7FB-7A7C-4925-9519-20246ADD08EE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3C12B77D-3A8D-4590-878D-61D7561FE53F}
+	EndGlobalSection
+EndGlobal

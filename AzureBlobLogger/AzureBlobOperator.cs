@@ -108,6 +108,7 @@ namespace AzureBlobLogger
                 {
                     await blob.AppendFromByteArrayAsync(content, 0, content.Length, accCondition, null, null);
                     flag = true;
+                    blob.ReleaseLease(accCondition);
                 }
                 catch (StorageException e)
                 {
@@ -137,7 +138,6 @@ namespace AzureBlobLogger
                     }
                     retryTime++;
                 }
-                blob.ReleaseLease(accCondition);
             }
         }
     }

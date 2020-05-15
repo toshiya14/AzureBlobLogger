@@ -19,6 +19,9 @@ namespace AzureBlobLogger
 
         private Task BlobUploadTask;
 
+        public TimeSpan AutoFlushTimeSpan { get; set; }
+        public int AutoFlushCount { get; set; }
+
         public BlobLogger(string constr, string container, string blobName)
         {
             this.constr = constr;
@@ -27,6 +30,8 @@ namespace AzureBlobLogger
 
             this.logItems = new SortedList<DateTime, AzureBlobLogItem>();
             this.logItemsLocker = new object();
+            this.AutoFlushCount = 30;
+            this.AutoFlushTimeSpan = TimeSpan.FromSeconds(30);
         }
 
         public void Append(string text, LogLevel level = LogLevel.Debug)
@@ -50,7 +55,7 @@ namespace AzureBlobLogger
 
         private void Evaluate()
         {
-            if(this.logItems.Count > 30 || DateTime.Now - lastFlushTime > TimeSpan.FromMinutes(5))
+            if(this.logItems.Count >AutoFlushCount || DateTime.Now - lastFlushTime > AutoFlushTimeSpan)
             {
                 this.BlobUploadTask = Flush();
             }

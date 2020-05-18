@@ -19,6 +19,7 @@ namespace LogTester
                 logger.Append("WARN log test.", LogLevel.Warning);
                 logger.Append("ERROR log test.", LogLevel.Error);
                 logger.Append("FATAL log test.", LogLevel.Fatal);
+                logger.Flush().Wait();
                 try
                 {
                     var b = 0;
@@ -37,6 +38,10 @@ namespace LogTester
                     logger.Append(ex, LogLevel.Error);
                 }
                 logger.Append(new Exception("System Exception Test"), LogLevel.Error);
+                Parallel.Invoke(
+                    logger.Flush().Wait,
+                    logger.Flush().Wait
+                    ); ;
             }
         }
     }

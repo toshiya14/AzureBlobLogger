@@ -19,9 +19,28 @@ namespace AzureBlobLogger
 
         private Task BlobUploadTask;
 
+        /// <summary>
+        /// Get or set the auto flush time span. For current version,
+        /// auto flush functions have been abandoned. As it seems not
+        /// so stable.
+        /// </summary>
+        [Obsolete]
         public TimeSpan AutoFlushTimeSpan { get; set; }
+
+        /// <summary>
+        /// Get or set the log count to trigger auto flush. For current
+        /// version, auto flush functions have been abandoned. As it
+        /// seems not so stable.
+        /// </summary>
+        [Obsolete]
         public int AutoFlushCount { get; set; }
 
+        /// <summary>
+        /// Initialize a new BlobLogger instance.
+        /// </summary>
+        /// <param name="constr">the connection string to the Azure storage.</param>
+        /// <param name="container">the container name.</param>
+        /// <param name="blobName">the blob name.</param>
         public BlobLogger(string constr, string container, string blobName)
         {
             this.constr = constr;
@@ -34,20 +53,32 @@ namespace AzureBlobLogger
             this.AutoFlushTimeSpan = TimeSpan.FromSeconds(30);
         }
 
+        /// <summary>
+        /// Append a text to the log cache.
+        /// </summary>
+        /// <param name="text">the text contents.</param>
+        /// <param name="level">the log level.</param>
         public void Append(string text, LogLevel level = LogLevel.Debug)
         {
             var item = new AzureBlobLogItem(level, text.Split('\r', '\n'));
             this.logItems.Add(item.Time, item);
-            Evaluate();
         }
 
+        /// <summary>
+        /// Append an object to the log cache. (use obj.ToString())
+        /// </summary>
+        /// <param name="obj">the object.</param>
+        /// <param name="level">the level.</param>
         public void Append(object obj, LogLevel level = LogLevel.Debug)
         {
             var item = new AzureBlobLogItem(level, obj);
             this.logItems.Add(item.Time, item);
-            Evaluate();
         }
 
+        /// <summary>
+        /// Set the a new blob name for future flush actions.
+        /// </summary>
+        /// <param name="newBlobName">new blob name.</param>
         public void SetLocation(string newBlobName)
         {
             this.blobName = newBlobName;
@@ -57,14 +88,26 @@ namespace AzureBlobLogger
         {
             if(this.logItems.Count >AutoFlushCount || DateTime.Now - lastFlushTime > AutoFlushTimeSpan)
             {
-                this.BlobUploadTask = Flush();
+                this.BlobUploadTask = UploadToAzure();
             }
         }
 
+        /// <summary>
+        /// Write the current cache to remote server.
+        /// </summary>
         public async Task Flush()
         {
             // Wait until the previous task is finished.
-            await BlobUploadTask;
+            if (BlobUploadTask != null && !BlobUploadTask.IsCompleted)
+            {
+                await BlobUploadTask;
+            }
+            this.BlobUploadTask = UploadToAzure();
+            await this.BlobUploadTask;
+        }
+
+        private async Task UploadToAzure()
+        {
 
             var logs = new StringBuilder();
             var bakup = new List<AzureBlobLogItem>();
@@ -73,7 +116,7 @@ namespace AzureBlobLogger
 
             lock (logItemsLocker)
             {
-                if(logItems.Count == 0)
+                if (logItems.Count == 0)
                 {
                     return;
                 }
@@ -95,7 +138,7 @@ namespace AzureBlobLogger
                 var bytes = Encoding.UTF8.GetBytes(logs.ToString());
                 await blob.Append(this.container, this.blobName, bytes);
             }
-            catch
+            catch(Exception ex)
             {
                 // Revert if failed.
                 lock (logItemsLocker)
@@ -105,12 +148,14 @@ namespace AzureBlobLogger
                         logItems.Add(item.Time, item);
                     }
                 }
+
+                throw new Exception("Cannot write to remote server.", ex);
             }
         }
 
         public void Dispose()
         {
-            BlobUploadTask.Wait();
+            BlobUploadTask?.Wait();
             Flush().Wait();
         }
     }

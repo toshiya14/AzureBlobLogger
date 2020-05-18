@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace AzureBlobLogger
@@ -93,50 +94,60 @@ namespace AzureBlobLogger
         {
             var container = client.GetContainerReference(containerName);
             var blob = container.GetAppendBlobReference(blobName);
+            AccessCondition accCond = null;
             if (!blob.Exists())
             {
                 await blob.CreateOrReplaceAsync();
             }
 
-            var retryTime = 0;
-            var flag = false;
-            while (!flag)
+            var retryFlag = true;
+            var retryCount = 0;
+            while (retryFlag)
             {
-                var leaseId = blob.AcquireLease(null, null);
-                var accCondition = AccessCondition.GenerateLeaseCondition(leaseId);
+                var leaseTimeout = TimeSpan.FromSeconds(15);
+                var cts = new CancellationTokenSource();
+                Task autoRenewLeaseTask = default;
                 try
                 {
-                    await blob.AppendFromByteArrayAsync(content, 0, content.Length, accCondition, null, null);
-                    flag = true;
-                    blob.ReleaseLease(accCondition);
-                }
-                catch (StorageException e)
-                {
-                    var response = e.RequestInformation.HttpStatusCode;
-                    if (response == (int)HttpStatusCode.Conflict)
+                    var leaseId = blob.AcquireLease(leaseTimeout, null);
+                    accCond = AccessCondition.GenerateLeaseCondition(leaseId);
+
+                    autoRenewLeaseTask = Task.Factory.StartNew(async () =>
                     {
-                        await Task.Delay(TimeSpan.FromSeconds(2));
-                    }
-                    else
-                    {
-                        if (retryTime >= RetryCounts)
+                        while (!cts.Token.IsCancellationRequested)
                         {
-                            blob.ReleaseLease(accCondition);
-                            flag = true;
-                            throw e;
+                            await blob.RenewLeaseAsync(accCond);
+                            await Task.Delay(leaseTimeout.Subtract(TimeSpan.FromSeconds(2)));
                         }
-                        retryTime++;
-                    }
+                    });
+
+                    await blob.AppendFromByteArrayAsync(content, 0, content.Length, accCond, null, null);
+                    cts.Cancel();
+                    await autoRenewLeaseTask;
+                    retryFlag = false;
                 }
-                catch (Exception ex)
+                catch(Exception ex)
                 {
-                    if (retryTime >= RetryCounts)
+                    retryCount++;
+                    if(retryCount >= 3)
                     {
-                        blob.ReleaseLease(accCondition);
-                        flag = true;
+                        retryFlag = false;
+                        cts.Cancel();
+                        if (autoRenewLeaseTask != null && !autoRenewLeaseTask.IsCompleted)
+                        {
+                            await autoRenewLeaseTask;
+                        }
+
                         throw ex;
                     }
-                    retryTime++;
+                    await Task.Delay(leaseTimeout);
+                }
+                finally
+                {
+                    if (accCond != null)
+                    {
+                        await blob.ReleaseLeaseAsync(accCond);
+                    }
                 }
             }
         }
